@@ -1,0 +1,46 @@
+{extend name="public/container"}
+{block name="title"}客服列表{/block}
+{block name="head_top"}
+<link rel="stylesheet" type="text/css" href="{__WAP_PATH}crmeb/css/store_service.css"/>
+<style>
+    .empty{width:100%;padding-top:1.4rem}
+    .empty img{width:46%;display:block;margin:0 auto}
+    .empty p{font-size:.22rem;line-height:1.2rem;text-align:center;color:#aaa}
+    .empty p a{color:#f84d30}
+    .empty .nothing {
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        width: 4rem;
+        height: 4rem;
+        -webkit-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+    }
+</style>
+{/block}
+{block name="content"}
+<body style="background-color: #FFF;">
+{if condition="$merchant.id > 0"}
+    <div class="title">
+        <a href="javascript:history.back(-1);" class="title-back"></a>
+        <div class="title-text">{$merchant.mer_name}</div>
+        <a class="title-go" href="{:Url('merchant/index',array('mid'=>$merchant['id']))}">进店</a>
+    </div>
+{/if}
+<div class="cus_server" {if condition="$merchant.id > 0"}style="padding-top: 50px;"{/if}>
+    {empty name="list"}
+    <div class="empty">
+        <img class="nothing" src="/wap/first/zsff/images/no_data_available.png">
+    </div>
+    {else/}
+    <ul>
+        {volist name="list" id="vo"}
+        <li onclick="window.location.href='{:Url('Service/service_ing',array('to_uid'=>$vo['uid'],'mer_id'=>$merchant['id']))}'">
+            <img src="{$vo.avatar}">
+            <span>{$vo.nickname}</span>
+        </li>
+        {/volist}
+    </ul>
+    {/empty}
+</div>
+{/block}

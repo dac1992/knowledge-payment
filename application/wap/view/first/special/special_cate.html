@@ -1,0 +1,257 @@
+{extend name="public/container"}
+{block name="title"}分类{/block}
+{block name="head_top"}
+<style>
+    .free{margin-top:.1rem;font-weight:400;font-size:.22rem;line-height:.38rem;color:#FF6B00;}
+    .nothing {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4.14rem;
+        height: 3.36rem;
+        -webkit-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+    }
+</style>
+<script src="/wap/first/zsff/js/scroll.js"></script>
+<script src="/wap/first/zsff/js/navbarscroll.js"></script>
+{/block}
+{block name="content"}
+<div class="goodsClass" id="app" v-cloak>
+    <div class="header">
+        <div class="search acea-row row-middle">
+            <div class="pictrue">{if $homeLogo}<img src="{$homeLogo}">{else}<img src="/wap/first/zsff/images/crmeb.png">{/if}</div>
+            <form class="form" @submit.prevent="goSearch">
+                <label class="label">
+                    <img class="img" src="/wap/first/zsff/images/search.png">
+                    <input class="input" v-model="search" placeholder="输入课程名称">
+                </label>
+                <input class="submit" type="submit" value="搜索">
+            </form>
+        </div>
+        <div v-if="grabeCate.length" class="wrapper" id="wrapper">
+            <div class="scroller">
+                <ul>
+                    <li v-for="item in grabeCate" :key="item.id" :data-id="item.id">
+                        <a href="javascript:void(0)" v-text="item.name"></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div v-if="subjectCate.length" class="nav" id="nav">
+        <div class="scroller">
+            <ul>
+                <li v-for="item in subjectCate" :key="item.id" :data-id="item.id" class="item">
+                    <a href="javascript:void(0)">
+                        <div class="pictrue"><img :src="item.pic"></div>
+                        <div class="name" v-text="item.name"></div>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="public_list goodList">
+        <a class="item acea-row" v-for="item in updateSpecialList" :href="getDetails(item.id)">
+            <div class="pictrue">
+                <img :src="item.image">
+                <div class="label">{{ item.special_type }}</div>
+            </div>
+            <div class="text">
+                <div class="title acea-row row-middle">
+                    <div class="name line1" v-text="item.title"></div>
+                </div>
+                <div class="labelList">
+                    <span class="labelItem" v-for="label in item.label">{{label}}</span>
+                </div>
+                <div class="acea-row row-middle row-between">
+                    <div>
+                        <div class="money" v-if="item.money > 0">¥<span>{{item.money}}</span></div>
+                        <div class="free" v-else>免费</div>
+                        <span v-if="item.special_type!=4" class="total">共{{item.count}}节</span>
+                    </div>
+                    <div class="num">{{item.browse_count}}人已学习</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <p class="loading-line" style="background-color: #ffffff" v-show="updateSpecialList.length">
+        <span v-show="loading" class="fa fa-spinner loadingpic" style="font-size: 0.4rem"></span>
+        <span v-text="loadTitle">加载更多</span>
+    </p>
+    <div v-if="!specialList.length && !loading && page === 2" >
+        <img class="nothing"  src="/wap/first/zsff/images/no_data_available.png">
+    </div>
+    <p class="loading-line">
+        <span v-show="loading" class="fa fa-spinner loadingpic" style="font-size: 0.4rem"></span>
+    </p>
+    <div style="height: 1.0rem"></div>
+    {include file="public/store_menu"}
+</div>
+{/block}
+{block name='foot'}
+<script>
+    var cate_id = {$cate_id};
+    var subject_id = {$subject_id};
+    require(['vue', 'helper', 'store', 'special-type'], function (Vue, $h, app, specialType) {
+        new Vue({
+            el: '#app',
+            data: {
+                grabeCate: [],
+                subjectCate: [],
+                specialList: [],
+                gradeId: 0,
+                subjectId: 0,
+                search: '',
+                loadTitle: '',
+                page: 1,
+                limit: 10,
+                loading: false,
+                loadend: false
+            },
+            computed: {
+                updateSpecialList: function () {
+                    return this.specialList.map(function (value) {
+                        value.special_type = specialType[value.type];
+                        return value;
+                    });
+                }
+            },
+            created: function () {
+                this.getCateList();
+            },
+            mounted: function () {
+                var that = this;
+                that.$nextTick(function () {
+                    $h.EventUtil.listenTouchDirection(document, function () {
+                        !that.loading && that.getSpecialList();
+                    }, false);
+                });
+            },
+            methods: {
+                goSearch: function () {
+                    this.loadend = false;
+                    this.page = 1;
+                    this.$set(this, 'specialList', []);
+                    this.getSpecialList();
+                },
+                getDetails: function (id) {
+                    return $h.U({
+                        c: 'special',
+                        a: 'details',
+                        q: { id: id }
+                    });
+                },
+                // 导航数据
+                getCateList: function () {
+                    var that = this;
+                    that.loading = true;
+                    app.baseGet($h.U({
+                        c: 'special',
+                        a: 'get_grade_cate'
+                    }), function (res) {
+                        that.loading = false;
+                        var grabeCate = res.data.data;
+                        that.grabeCate = grabeCate;
+                        var defaultSelect = 0;
+
+                        for (let i = 0; i < that.grabeCate.length; i++) {
+                            if (cate_id == that.grabeCate[i].id) {
+                                defaultSelect = i;
+                                break;
+                            }
+                        }
+
+                        that.$nextTick(function () {
+                            $('#wrapper').navbarscroll({
+                                defaultSelect: defaultSelect,
+                                scrollerWidth: 5,
+                                fingerClick: 1,
+                                endClickScroll: function (obj) {
+                                    that.gradeId = obj.data('id');
+
+                                    that.getSubject();
+                                }
+                            });
+                        });
+                    }, function () {
+                        that.loading = false;
+                    });
+                },
+                // 二级导航
+                getSubject: function () {
+                    var that = this;
+                    var subjectCate = [];
+                    var defaultSelect = 0;
+
+                    that.subjectCate = [];
+                    that.subjectId = 0;
+                    that.specialList = [];
+
+                    for (let i = 0; i < that.grabeCate.length; i++) {
+                        if (that.gradeId == that.grabeCate[i].id) {
+                            subjectCate = that.grabeCate[i].children;
+                            break;
+                        }
+                    }
+
+                    if (subjectCate) {
+                        that.subjectCate = subjectCate;
+
+                        for (let j = 0; j < that.subjectCate.length; j++) {
+                            if (subject_id == that.subjectCate[j].id) {
+                                defaultSelect = j;
+                                break;
+                            }
+                        }
+
+                        that.$nextTick(function () {
+                            $('#nav').navbarscroll({
+                                defaultSelect: defaultSelect,
+                                scrollerWidth: 5,
+                                fingerClick: 1,
+                                endClickScroll: function (obj) {
+                                    that.subjectId = obj.data('id');
+
+                                    that.specialList = [];
+                                    that.loadend = false;
+                                    that.page = 1;
+                                    that.getSpecialList();
+                                }
+                            });
+                        });
+                    }
+                },
+                // 课程列表
+                getSpecialList: function () {
+                    var that = this;
+                    if (that.loading || that.loadend) {
+                        return;
+                    };
+                    that.loading = true;
+                    that.loadTitle = '';
+                    app.baseGet($h.U({
+                        c: 'special',
+                        a: 'get_special_list',
+                        q: {
+                            subject_id: that.subjectId,
+                            search: that.search,
+                            page: that.page++,
+                            limit: that.limit
+                        }
+                    }), function (res) {
+                        var list = res.data.data;
+                        that.loading = false;
+                        that.specialList = that.specialList.concat(list);
+                        that.loadend = list.length < that.limit;
+                        that.loadTitle = that.loadend ? '我是有底线的' : '上拉加载更多';
+                    }, function () {
+                        that.loading = false;
+                        this.loadTitle = '加载更多';
+                    });
+                }
+            }
+        });
+    })
+</script>
+{/block}
